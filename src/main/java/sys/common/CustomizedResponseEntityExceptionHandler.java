@@ -1,4 +1,4 @@
-package sys.controller;
+package sys.common;
 
 import java.util.Date;
 

@@ -1,6 +1,7 @@
 package sys.service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -8,7 +9,9 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import sys.dao.TodoRepository;
+import sys.exception.TodoNotFoundException;
 import sys.model.TodoEntity;
 import sys.todo.TodoDto;
 import sys.todo.TodoStatus;
@@ -16,6 +19,7 @@ import sys.util.TodoUtil;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class TodoServiceImpl implements TodoService {
 
     private TodoRepository todoRepository;
@@ -27,6 +31,7 @@ public class TodoServiceImpl implements TodoService {
     }
 
     private List<TodoEntity> findTodos(final TodoStatus status) {
+	log.info(String.format("Fetching todos with search parameter %s", status));
 	return status != null ? todoRepository.findAllByStatus(status) : todoRepository.findAll();
     }
 
@@ -34,44 +39,60 @@ public class TodoServiceImpl implements TodoService {
     public TodoDto update(final TodoDto todo) {
 	return todoRepository.findById(todo.getId()).map(entity -> {
 
+	    log.info(String.format("Patching entity %s with values %s", entity, todo));
+
 	    if (todo.getStatus().equals(TodoStatus.PAST_DUE)) {
+		log.error(String.format("Status change to PAST_DUE not allowed for entity %s with updated values %s",
+			entity, todo));
 		throw new IllegalArgumentException("Status change not allowed");
 	    }
 
 	    entity.setDescription(todo.getDescription());
-	    entity.setStatus(todo.getStatus());
-	    return toDto(todoRepository.save(entity));
-	}).orElseThrow(RuntimeException::new);
+	    updateStatus(entity, todo);
+	    return TodoUtil.toDto(mapper, todoRepository.save(entity));
+	}).orElseThrow(() -> new TodoNotFoundException("Todo not found " + todo.getId()));
 
+    }
+
+    private void updateStatus(final TodoEntity entity, final TodoDto todoDto) {
+	if (todoDto.getStatus().equals(TodoStatus.DONE)) {
+	    final LocalDateTime currentDate = getCurrentDate();
+	    entity.setCompletedAt(currentDate);
+	}
+	entity.setStatus(todoDto.getStatus());
     }
 
     @Override
     public TodoDto create(final TodoDto todo) {
 	todo.setId(null);
 	todo.setCompletedAt(null);
-	todo.setCreatedAt(LocalDateTime.now());
-	todo.setStatus(todo.getDueDate().isBefore(LocalDateTime.now()) ? TodoStatus.PAST_DUE : TodoStatus.NOT_DONE);
+	final LocalDateTime currentDate = getCurrentDate();
+	todo.setCreatedAt(currentDate);
+	todo.setStatus(TodoStatus.NOT_DONE);
 
-	final TodoEntity entity = toEntity(todo);
-	return toDto(todoRepository.save(entity));
+	final TodoEntity entity = TodoUtil.toEntity(mapper, todo);
+
+	log.info(String.format("Adding new todo entity %s", entity));
+
+	return TodoUtil.toDto(mapper, todoRepository.save(entity));
     }
 
-    private TodoDto toDto(final TodoEntity entity) {
-	return mapper.convertValue(entity, TodoDto.class);
-    }
-
-    private TodoEntity toEntity(final TodoDto todo) {
-	return mapper.convertValue(todo, TodoEntity.class);
+    private LocalDateTime getCurrentDate() {
+	return LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
     }
 
     @Override
     public TodoDto getTodo(final Long id) {
-	return todoRepository.findById(id).map(this::toDto).orElseThrow(RuntimeException::new);
+	return todoRepository.findById(id).map(entity -> TodoUtil.toDto(mapper, entity))
+		.orElseThrow(() -> new TodoNotFoundException("Todo not found"));
     }
 
     @Override
     public void updateStatusByDate(final LocalDateTime currentDate) {
-	todoRepository.findAllByDueDateLessThanEqual(currentDate).forEach(entity -> {
+	todoRepository.findAllByDueDateLessThanEqualAndStatus(currentDate, TodoStatus.NOT_DONE).forEach(entity -> {
+	    log.info(String.format("Updating status for entity %s", entity));
+
+	    entity.setStatus(TodoStatus.PAST_DUE);
 	    todoRepository.save(entity);
 	});
     }

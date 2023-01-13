@@ -15,4 +15,12 @@ public class TodoUtil {
 	});
     }
 
+    public static TodoDto toDto(final ObjectMapper mapper, final TodoEntity entity) {
+	return mapper.convertValue(entity, TodoDto.class);
+    }
+
+    public static TodoEntity toEntity(final ObjectMapper mapper, final TodoDto todo) {
+	return mapper.convertValue(todo, TodoEntity.class);
+    }
+
 }

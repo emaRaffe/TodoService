@@ -12,5 +12,5 @@ public interface TodoRepository extends JpaRepository<TodoEntity, Long> {
 
     List<TodoEntity> findAllByStatus(TodoStatus status);
 
-    List<TodoEntity> findAllByDueDateLessThanEqual(LocalDateTime dueDate);
+    List<TodoEntity> findAllByDueDateLessThanEqualAndStatus(LocalDateTime dueDate, TodoStatus status);
 }
