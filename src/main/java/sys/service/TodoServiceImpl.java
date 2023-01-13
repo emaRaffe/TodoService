@@ -59,6 +59,9 @@ public class TodoServiceImpl implements TodoService {
 	    final LocalDateTime currentDate = getCurrentDate();
 	    entity.setCompletedAt(currentDate);
 	}
+	if (todoDto.getStatus().equals(TodoStatus.NOT_DONE)) {
+	    entity.setCompletedAt(null);
+	}
 	entity.setStatus(todoDto.getStatus());
     }
 
