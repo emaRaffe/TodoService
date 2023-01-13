@@ -16,8 +16,16 @@ todos to the PAST_DUE status.
 
 
 ### assumptions
-Within a Kubernetes cluster, there should be as many pods as the traffic is requiring
+-Within a Kubernetes cluster, there should be as many pods as the traffic is requiring
 
+-Additional not required functionalities (e.g. deletion of a todo may be implemented in 
+subsequent versions of the application)
+
+-Todos created with a due date in the past shall be updated on the first execution of the
+automated scheduler 
+
+-According the given requirement, in the current version the update only supports changing 
+the description and the state, any other fields are not editable by the user
 
 ## build, run unit tests and run the spring boot app
 
@@ -55,7 +63,7 @@ curl --header "Content-Type: application/json" --request POST --data '{"descript
 
 ### Get todo
 
-curl http://localhost:9010/todos/<todo-id>
+curl http://localhost:9010/todos/{todo-id}
 
 
 ## Get todos
@@ -70,7 +78,7 @@ curl http://localhost:9010/todos?status=NOT_DONE
 
 ## Update todo (description, status)
 
-curl --header "Content-Type: application/json" --request PATCH --data '{"description":"desc-2","status":"DONE"}' http://localhost:9010/todos/<todo-id>
+curl --header "Content-Type: application/json" --request PATCH --data '{"description":"desc-2","status":"DONE"}' http://localhost:9010/todos/{todo-id}
 
 
 

@@ -15,7 +15,7 @@ public class StateScheduler {
     private TodoService todoService;
 
     @Scheduled(cron = "0 1 * * * *")
-    public void cronJobSch() {
+    public void updateTodos() {
 	todoService.updateStatusByDate(LocalDateTime.now());
     }
 }

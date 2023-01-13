@@ -49,6 +49,9 @@ public class TodoServiceImpl implements TodoService {
 
 	    entity.setDescription(todo.getDescription());
 	    updateStatus(entity, todo);
+
+	    log.info(String.format("Saving updated entity %s", entity));
+
 	    return TodoUtil.toDto(mapper, todoRepository.save(entity));
 	}).orElseThrow(() -> new TodoNotFoundException("Todo not found " + todo.getId()));
 

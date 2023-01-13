@@ -3,6 +3,7 @@ package sys.controller.itest;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -94,14 +95,16 @@ public class TodoControllerITest {
 	final TodoDto todoDto = TodoUtil.toDto(objectMapper, entity);
 	todoDto.setDescription("new description");
 	todoDto.setStatus(TodoStatus.DONE);
-	todoDto.setCompletedAt(DATETIME);
 
 	final MvcResult result = mockMvc.perform(patch("/todos/" + entity.getId())
 		.contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(todoDto)))
 		.andExpect(status().isOk()).andReturn();
 
 	final TodoDto todo = objectMapper.readValue(result.getResponse().getContentAsString(), TodoDto.class);
-	assertThat(todo, equalTo(todoDto));
+	assertThat(todo.getDescription(), equalTo(todoDto.getDescription()));
+	assertThat(todo.getStatus(), equalTo(todoDto.getStatus()));
+	assertTrue(todo.getCompletedAt().isAfter(DATETIME));
+
     }
 
     @Test
